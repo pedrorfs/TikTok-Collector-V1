@@ -69,6 +69,17 @@ def get_contents(text):
     print(contents)
     return contents
 
+def parse_content(file_content):
+    get_user_nickname(file_content)
+    get_user_unique_id(file_content)
+    get_signature(file_content)
+    get_verified(file_content)
+    get_private_account(file_content)
+    get_user_id(file_content)
+    get_video_create_time(file_content)
+    get_stats(file_content)
+    get_contents(file_content)
+
 if __name__ == "__main__":
     with open('video2.txt', 'r', encoding='utf-8') as file:
         file_content = file.read()
