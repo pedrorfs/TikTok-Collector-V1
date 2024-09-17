@@ -13,7 +13,7 @@ Este projeto foi desenvolvido tendo como base a API não oficial do TikTok. Send
 1. Baixe o TikTok-Api e instale localmente
 2. O coletor de dados deverá ser colocado no diretório raiz do TikTok-Api
 
-## Modo de Uso
+## Configurações do Coletor
 Dentro do diretório do coletor de dados há um arquivo `.env`. Esse arquivo será utilizado para configurar o coletor com as seguintes variáveis de ambiente:
 
 |        Name         |               Description                            | Required |                   Limitations                                            |
@@ -25,3 +25,8 @@ Dentro do diretório do coletor de dados há um arquivo `.env`. Esse arquivo ser
 |   `TOKEN`           | Token de verificação necessário para realizar coleta |    ✅    |                                                                          |
 |   `HASHTAG`         | Hashtag referência para ser coletado os vídeos       |    ❌    |  Insira apenas o nome da hashtag, não é necessário adicionar o símbolo # |
 
+
+## Modo de Uso
+```bash
+py collector.py
+```
