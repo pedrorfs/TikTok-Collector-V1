@@ -2,7 +2,7 @@
 
 Este projeto foi desenvolvido com o intuito de oferecer um coletor de dados que seja de fácil utilização. Com ele é possível coletar dados de um determinado perfil, dados de um vídeo específico ou pesquisar vídeos relacionados a uma determinada hashtag.
 
-## Setup
+## 🖥️ Setup
 Para utilizar esse projeto você precisará ter instalado na sua máquina:
 - Python
 - [TikTok-Api](https://github.com/davidteather/TikTok-Api/tree/V6.5.2)
@@ -13,7 +13,7 @@ Este projeto foi desenvolvido tendo como base a API não oficial do TikTok. Send
 1. Baixe o TikTok-Api e instale localmente
 2. O coletor de dados deverá ser colocado no diretório raiz do TikTok-Api
 
-## Configurações do Coletor
+## ⚙️Configurações do Coletor
 Dentro do diretório do coletor de dados há um arquivo `.env`. Esse arquivo será utilizado para configurar o coletor com as seguintes variáveis de ambiente:
 
 |        Name         |               Description                            | Required |                   Limitations                                            |
@@ -26,7 +26,7 @@ Dentro do diretório do coletor de dados há um arquivo `.env`. Esse arquivo ser
 |   `HASHTAG`         | Hashtag referência para ser coletado os vídeos       |    ❌    |  Insira apenas o nome da hashtag, não é necessário adicionar o símbolo # |
 
 
-## Modo de Uso
+## ▶️ Modo de Uso
 ```bash
 py collector.py
 ```
