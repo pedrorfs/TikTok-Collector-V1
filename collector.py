@@ -19,16 +19,13 @@ async def main():
         await collect_user(unique_ids=users, path=path)
 
     elif mode == "Video":
-        await get_video_example()
+        await collect_video(url=video, path=path)
 
     elif mode == "Comments":
         await collect_comments(unique_id=user, path=path)
 
     elif mode == "Hashtag":
         await collect_hashtag_videos(hashtag, path=path)
-
-    elif mode == "Sound":
-        await sound_videos()
 
 def get_selected_attibutes(video):
     selected_data = {}
@@ -83,6 +80,28 @@ async def collect_user(unique_ids, path=None):
                 with open("./logs.txt", "w", encoding='utf-8') as outfile:
                     outfile.write("error")
 
+async def collect_video(url, path=None):
+    async with TikTokApi() as api:
+        await api.create_sessions(ms_tokens=[token], num_sessions=1, sleep_after=3, headless=False)
+
+        video = api.video(
+            url=url
+        )
+        video_info = await video.info()
+
+        video_directory = None
+        if path == None:
+            video_directory = rf"./video"
+        else:
+            video_directory = path + rf"./video"
+        os.mkdir(video_directory)
+
+        selected_data = get_selected_attibutes(video_info)
+        file_name = get_video_create_time(video_info)
+        with open(f"{video_directory}/{file_name}.txt", "w", encoding='utf-8') as outfile:
+            outfile.write(str(selected_data))
+        # json.dump(selected_data, outfile)
+
 
 async def collect_hashtag_videos(hashtag, path=None):
     if path == None:
@@ -122,32 +141,7 @@ async def collect_comments(unique_id, path=None):
                 comment_info = get_comment_info(comment)
                 file_name = get_comment_create_time(comment.as_dict)
                 with open(f"{video_directory}/{file_name}.txt", "w", encoding='utf-8') as outfile:
-                    outfile.write(str(comment_info))
-
-async def collect_sound_videos(unique_id, path=None):
-    if path == None:
-        path = rf"./{unique_id}"
-    else:
-        path = path + rf"./{unique_id}"
-
-    os.mkdir(path)
-
-    async with TikTokApi() as api:
-        await api.create_sessions(ms_tokens=[token], num_sessions=1, sleep_after=3, headless=False)
-        async for sound in api.sound(id=sound_id).videos(count=30):
-            print(sound)
-            print(sound.as_dict)         
-
-            video_directory = rf"{path}/{video.id}"
-            os.mkdir(video_directory)
-
-            async for comment in video.comments(count=30):
-                comment_info = get_comment_info(comment)
-                file_name = get_comment_create_time(comment.as_dict)
-                with open(f"{video_directory}/{file_name}.txt", "w", encoding='utf-8') as outfile:
-                    outfile.write(str(comment_info))
-
-                
+                    outfile.write(str(comment_info))                
 
 if __name__ == "__main__":
     asyncio.run(main())
