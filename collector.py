@@ -9,6 +9,7 @@ import json
 enviroment_variables = dotenv_values(".env")
 mode = enviroment_variables["MODE"]
 users = enviroment_variables["USERS"].split(",")
+user = enviroment_variables["USER"]
 video = enviroment_variables["VIDEO"]
 path = enviroment_variables["OUTPUT_PATH"]
 token = enviroment_variables["TOKEN"]
@@ -22,7 +23,7 @@ async def main():
         await collect_video(url=video, path=path)
 
     elif mode == "Comments":
-        await collect_comments(unique_id=user, path=path)
+        await collect_comments(url=video, path=path)
 
     elif mode == "Hashtag":
         await collect_hashtag_videos(hashtag, path=path)
@@ -121,27 +122,23 @@ async def collect_hashtag_videos(hashtag, path=None):
                 outfile.write(str(selected_data))
                 # json.dump(selected_data, outfile)
 
-async def collect_comments(unique_id, path=None):
-    if path == None:
-        path = rf"./{unique_id}"
-    else:
-        path = path + rf"./{unique_id}"
-
-    os.mkdir(path)
-
+async def collect_comments(url, path=None):
     async with TikTokApi() as api:
         await api.create_sessions(ms_tokens=[token], num_sessions=1, sleep_after=3, headless=False)
-        user = api.user(unique_id)           
+        video = api.video(url=url)
 
-        async for video in user.videos(count=30):
-            video_directory = rf"{path}/{video.id}"
-            os.mkdir(video_directory)
+        video_directory = None
+        if path == None:
+            video_directory = rf"./video_comments"
+        else:
+            video_directory = path + rf"./video_comments"
+        os.mkdir(video_directory)
 
-            async for comment in video.comments(count=30):
-                comment_info = get_comment_info(comment)
-                file_name = get_comment_create_time(comment.as_dict)
-                with open(f"{video_directory}/{file_name}.txt", "w", encoding='utf-8') as outfile:
-                    outfile.write(str(comment_info))                
+        async for comment in video.comments(count=30):
+            comment_info = get_comment_info(comment)
+            file_name = get_comment_create_time(comment.as_dict)
+            with open(f"{video_directory}/{file_name}.txt", "w", encoding='utf-8') as outfile:
+                outfile.write(str(comment_info))                
 
 if __name__ == "__main__":
     asyncio.run(main())
