@@ -8,8 +8,7 @@ import json
 #Get environment variables
 enviroment_variables = dotenv_values(".env")
 mode = enviroment_variables["MODE"]
-users = enviroment_variables["USERS"].split(",")
-user = enviroment_variables["USER"]
+users = enviroment_variables["USER"]
 video = enviroment_variables["VIDEO"]
 path = enviroment_variables["OUTPUT_PATH"]
 token = enviroment_variables["TOKEN"]
@@ -17,7 +16,7 @@ hashtag = enviroment_variables["HASHTAG"]
 
 async def main():
     if mode == "User":
-        await collect_user(unique_ids=users, path=path)
+        await collect_user(users, path=path)
 
     elif mode == "Video":
         await collect_video(url=video, path=path)
@@ -57,29 +56,26 @@ def get_comment_info(comment):
     info["likes_count"] = comment.likes_count
     return info 
 
-async def collect_user(unique_ids, path=None):
+async def collect_user(users, path=None):
     async with TikTokApi() as api:
         await api.create_sessions(ms_tokens=[token], num_sessions=1, sleep_after=3, headless=False)
 
-        for id in unique_ids:
-            try: 
-                if path == None:
-                    user_directory = rf"./{id}"
-                else:
-                    user_directory = path + rf"./{id}"
-                os.mkdir(user_directory)
+        with open(users, 'r') as file:
+            for line in file: #Cada linha do arquivo contém um id de usuário
+                user_id = line.strip() 
 
-                user = api.user(id)           
-                async for video in user.videos(count=30):
+                if path == None:
+                    user_directory = rf"./{user_id}"
+                else:
+                    user_directory = path + rf"./{user_id}"
+                os.mkdir(user_directory) #Cria pasta com o nome do usuário
+
+                user = api.user(user_id)  #Busca por usuário         
+                async for video in user.videos(count=30): #Busca por vídeos do usuário
                     selected_data = get_selected_attibutes(video.as_dict)
                     file_name = get_video_create_time(video.as_dict)
                     with open(f"{user_directory}/{file_name}.txt", "w", encoding='utf-8') as outfile:
                         outfile.write(str(selected_data))
-                    # json.dump(selected_data, outfile)
-
-            except RuntimeError:
-                with open("./logs.txt", "w", encoding='utf-8') as outfile:
-                    outfile.write("error")
 
 async def collect_video(url, path=None):
     async with TikTokApi() as api:
@@ -101,8 +97,6 @@ async def collect_video(url, path=None):
         file_name = get_video_create_time(video_info)
         with open(f"{video_directory}/{file_name}.txt", "w", encoding='utf-8') as outfile:
             outfile.write(str(selected_data))
-        # json.dump(selected_data, outfile)
-
 
 async def collect_hashtag_videos(hashtag, path=None):
     if path == None:
@@ -120,7 +114,6 @@ async def collect_hashtag_videos(hashtag, path=None):
             file_name = get_video_create_time(video.as_dict)
             with open(f"{path}/{file_name}.txt", "w", encoding='utf-8') as outfile:
                 outfile.write(str(selected_data))
-                # json.dump(selected_data, outfile)
 
 async def collect_comments(url, path=None):
     async with TikTokApi() as api:
