@@ -48,7 +48,7 @@ def get_selected_attributes(video):
     return selected_data
 
 # Função para extrair o tempo de criação do vídeo
-def get_video_create_time(video):
+def get_create_time(video):
     return video["createTime"]
 
 # Função para extrair informações de um comentário
@@ -73,7 +73,7 @@ async def collect_user_videos(users, path=None):
                 user = api.user(user_id)  # Buscar dados do usuário
                 async for video in user.videos(count=30):  # Buscar vídeos do usuário
                     video_data = get_selected_attributes(video.as_dict)  # Obter dados selecionados do vídeo
-                    file_name = f"{get_video_create_time(video.as_dict)}.txt"  # Nome do arquivo baseado no tempo de criação
+                    file_name = f"{get_create_time(video.as_dict)}.txt"  # Nome do arquivo baseado no tempo de criação
                     write_to_file(os.path.join(user_directory, file_name), video_data)  # Escrever dados no arquivo
 
 # Função para coletar dados de um vídeo por URL
@@ -89,7 +89,7 @@ async def collect_video_by_url(url, path=None):
         create_directory(video_directory)  # Criar diretório, se não existir
 
         video_data = get_selected_attributes(video_info)  # Obter dados selecionados do vídeo
-        file_name = f"{get_video_create_time(video_info)}.txt"  # Nome do arquivo baseado no tempo de criação
+        file_name = f"{get_create_time(video_info)}.txt"  # Nome do arquivo baseado no tempo de criação
         write_to_file(os.path.join(video_directory, file_name), video_data)  # Escrever dados no arquivo
 
 # Função para coletar vídeos por hashtag
@@ -104,7 +104,7 @@ async def collect_hashtag_videos(hashtag, path=None):
         tag = api.hashtag(name=hashtag)  # Buscar vídeos pela hashtag
         async for video in tag.videos(count=30):  # Iterar sobre os vídeos encontrados
             video_data = get_selected_attributes(video.as_dict)  # Obter dados selecionados do vídeo
-            file_name = f"{get_video_create_time(video.as_dict)}.txt"  # Nome do arquivo baseado no tempo de criação
+            file_name = f"{get_create_time(video.as_dict)}.txt"  # Nome do arquivo baseado no tempo de criação
             write_to_file(os.path.join(path, file_name), video_data)  # Escrever dados no arquivo
 
 # Função para coletar comentários de um vídeo
@@ -120,7 +120,7 @@ async def collect_video_comments(url, path=None):
 
         async for comment in video.comments(count=30):  # Iterar sobre os comentários do vídeo
             comment_data = get_comment_info(comment)  # Obter informações do comentário
-            file_name = f"{get_comment_create_time(comment.as_dict)}.txt"  # Nome do arquivo baseado no tempo de criação
+            file_name = f"{get_create_time(comment.as_dict)}.txt"  # Nome do arquivo baseado no tempo de criação
             write_to_file(os.path.join(video_directory, file_name), comment_data)  # Escrever dados no arquivo
 
 # Função principal que executa o processo baseado no modo especificado
