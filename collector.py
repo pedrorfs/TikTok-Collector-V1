@@ -3,6 +3,7 @@ import os
 import json
 from dotenv import dotenv_values
 from TikTokApi import TikTokApi
+import time
 
 # Carregar as variáveis de ambiente
 env = dotenv_values(".env")
@@ -16,6 +17,10 @@ HASHTAG = env.get("HASHTAG")
 # Validar as variáveis de ambiente
 if not all([MODE, USERS, VIDEO_URL, OUTPUT_PATH, TOKEN, HASHTAG]):
     raise ValueError("Uma ou mais variáveis de ambiente estão faltando.")
+
+# Retorna o timestamp atual no formato "YYYY-MM-DD HH:MM:SS"
+def get_current_timestamp():
+    return int(time.time())
 
 # Função auxiliar para criar diretórios, se não existirem
 def create_directory(path):
@@ -47,6 +52,12 @@ def get_selected_attributes(video):
     
     return selected_data
 
+def get_selected_user_info(user_info):
+    selected_data = {
+        "stats": user_info["userInfo"]["stats"]
+    }    
+    return selected_data
+
 # Função para extrair o tempo de criação do vídeo
 def get_create_time(video):
     return video["createTime"]
@@ -64,13 +75,21 @@ async def collect_user_videos(users, path=None):
         # Criar sessão para autenticação com o TikTok
         await api.create_sessions(ms_tokens=[TOKEN], num_sessions=1, sleep_after=3, headless=False)
 
+        # Create a main directory to store all users' data
+        current_timestamp = get_current_timestamp()
+        main_directory = os.path.join(path, rf"User - {current_timestamp}")
+        create_directory(main_directory)  # Ensure the main directory exists
+
         with open(users, 'r') as file:
             for line in file:
                 user_id = line.strip()  # Extrair o ID do usuário
-                user_directory = os.path.join(path, user_id) if path else f"./{user_id}"  # Definir diretório de saída
+                user_directory = os.path.join(main_directory, user_id) if path else f"./{user_id}"  # Definir diretório de saída
                 create_directory(user_directory)  # Criar diretório, se não existir
 
                 user = api.user(user_id)  # Buscar dados do usuário
+                user_info = await user.info()
+                write_to_file(os.path.join(user_directory, "userInfo.txt"), get_selected_user_info(user_info))
+
                 async for video in user.videos(count=30):  # Buscar vídeos do usuário
                     video_data = get_selected_attributes(video.as_dict)  # Obter dados selecionados do vídeo
                     file_name = f"{get_create_time(video.as_dict)}.txt"  # Nome do arquivo baseado no tempo de criação
@@ -98,7 +117,12 @@ async def collect_hashtag_videos(hashtag, path=None):
         # Criar sessão para autenticação com o TikTok
         await api.create_sessions(ms_tokens=[TOKEN], num_sessions=1, sleep_after=3, headless=False)
 
-        path = os.path.join(path, hashtag) if path else f"./{hashtag}"  # Definir diretório de saída
+        # Create a main directory to store all users' data
+        current_timestamp = get_current_timestamp()
+        main_directory = os.path.join(path, rf"Hashtag - {current_timestamp}")
+        create_directory(main_directory)  # Ensure the main directory exists
+
+        path = os.path.join(main_directory, hashtag) if path else f"./{hashtag}"  # Definir diretório de saída
         create_directory(path)  # Criar diretório, se não existir
 
         tag = api.hashtag(name=hashtag)  # Buscar vídeos pela hashtag
