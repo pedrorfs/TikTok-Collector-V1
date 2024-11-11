@@ -8,14 +8,14 @@ import time
 # Carregar as variáveis de ambiente
 env = dotenv_values(".env")
 MODE = env.get("MODE")
-USERS = env.get("USER")
-VIDEO_URL = env.get("VIDEO")
+USERS = env.get("USERS")
+URLS = env.get("URLS")
 OUTPUT_PATH = env.get("OUTPUT_PATH")
 TOKEN = env.get("TOKEN")
 HASHTAG = env.get("HASHTAG")
 
 # Validar as variáveis de ambiente
-if not all([MODE, USERS, VIDEO_URL, OUTPUT_PATH, TOKEN, HASHTAG]):
+if not all([MODE, USERS, URLS, OUTPUT_PATH, TOKEN, HASHTAG]):
     raise ValueError("Uma ou mais variáveis de ambiente estão faltando.")
 
 # Retorna o timestamp atual no formato "YYYY-MM-DD HH:MM:SS"
@@ -30,6 +30,11 @@ def create_directory(path):
 def write_to_file(file_path, data):
     with open(file_path, "w", encoding='utf-8') as outfile:
         outfile.write(str(data))
+
+# Função auxiliar para escrever dados em um arquivo
+def write_to_json_file(file_path, data):
+    with open(file_path, "w", encoding='utf-8') as outfile:
+        json.dump(data, outfile)
 
 # Função para extrair os atributos selecionados de um vídeo do TikTok
 def get_selected_attributes(video):
@@ -96,20 +101,23 @@ async def collect_user_videos(users, path=None):
                     write_to_file(os.path.join(user_directory, file_name), video_data)  # Escrever dados no arquivo
 
 # Função para coletar dados de um vídeo por URL
-async def collect_video_by_url(url, path=None):
+async def collect_videos_by_urls(urls, path=None):
     async with TikTokApi() as api:
         # Criar sessão para autenticação com o TikTok
-        await api.create_sessions(ms_tokens=[TOKEN], num_sessions=1, sleep_after=3, headless=False)
+        await api.create_sessions(ms_tokens=[TOKEN], num_sessions=1, sleep_after=1, headless=False)
 
-        video = api.video(url=url)  # Obter o vídeo pelo URL
-        video_info = await video.info()  # Obter informações detalhadas do vídeo
-
-        video_directory = os.path.join(path, "video") if path else "./video"  # Definir diretório de saída
+        video_directory = os.path.join(path, "videos") if path else "./video"  # Definir diretório de saída
         create_directory(video_directory)  # Criar diretório, se não existir
 
-        video_data = get_selected_attributes(video_info)  # Obter dados selecionados do vídeo
-        file_name = f"{get_create_time(video_info)}.txt"  # Nome do arquivo baseado no tempo de criação
-        write_to_file(os.path.join(video_directory, file_name), video_data)  # Escrever dados no arquivo
+        with open(urls, 'r') as file:
+            for line in file:
+                url = line.strip()  # Extrair o ID do usuário
+                video = api.video(url=url)  # Obter o vídeo pelo URL
+                video_info = await video.info()  # Obter informações detalhadas do vídeo
+
+                video_data = get_selected_attributes(video_info)  # Obter dados selecionados do vídeo
+                file_name = f"{get_create_time(video_info)}.json"  # Nome do arquivo baseado no tempo de criação
+                write_to_json_file(os.path.join(video_directory, file_name), video_data)  # Escrever dados no arquivo
 
 # Função para coletar vídeos por hashtag
 async def collect_hashtag_videos(hashtag, path=None):
@@ -152,9 +160,9 @@ async def main():
     if MODE == "User":
         await collect_user_videos(USERS, path=OUTPUT_PATH)  # Coletar vídeos de usuários
     elif MODE == "Video":
-        await collect_video_by_url(VIDEO_URL, path=OUTPUT_PATH)  # Coletar dados de um vídeo específico
+        await collect_videos_by_urls(URLS, path=OUTPUT_PATH)  # Coletar dados de um vídeo específico
     elif MODE == "Comments":
-        await collect_video_comments(VIDEO_URL, path=OUTPUT_PATH)  # Coletar comentários de um vídeo
+        await collect_video_comments(URLS, path=OUTPUT_PATH)  # Coletar comentários de um vídeo
     elif MODE == "Hashtag":
         await collect_hashtag_videos(HASHTAG, path=OUTPUT_PATH)  # Coletar vídeos por hashtag
     else:
