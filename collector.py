@@ -5,7 +5,7 @@ from dotenv import dotenv_values
 from TikTokApi import TikTokApi
 import time
 
-# Carregar as variáveis de ambiente
+# Load environment variables
 env = dotenv_values(".env")
 MODE = env.get("MODE")
 USERS = env.get("USERS")
@@ -14,29 +14,29 @@ OUTPUT_PATH = env.get("OUTPUT_PATH")
 TOKEN = env.get("TOKEN")
 HASHTAG = env.get("HASHTAG")
 
-# Validar as variáveis de ambiente
+# Validate environment variables
 if not all([MODE, USERS, URLS, OUTPUT_PATH, TOKEN, HASHTAG]):
-    raise ValueError("Uma ou mais variáveis de ambiente estão faltando.")
+    raise ValueError("One or more environment variables are missing.")
 
-# Retorna o timestamp atual no formato "YYYY-MM-DD HH:MM:SS"
+# Returns the current timestamp in the format "YYYY-MM-DD HH:MM:SS"
 def get_current_timestamp():
     return int(time.time())
 
-# Função auxiliar para criar diretórios, se não existirem
+# Helper function to create directories if they don't exist
 def create_directory(path):
     os.makedirs(path, exist_ok=True)
 
-# Função auxiliar para escrever dados em um arquivo
+# Helper function to write data to a file
 def write_to_file(file_path, data):
     with open(file_path, "w", encoding='utf-8') as outfile:
         outfile.write(str(data))
 
-# Função auxiliar para escrever dados em um arquivo
+# Helper function to write data to a JSON file
 def write_to_json_file(file_path, data):
     with open(file_path, "w", encoding='utf-8') as outfile:
         json.dump(data, outfile)
 
-# Função para extrair os atributos selecionados de um vídeo do TikTok
+# Function to extract selected attributes from a TikTok video
 def get_selected_attributes(video):
     selected_data = {
         "nickname": video["author"]["nickname"],
@@ -63,21 +63,21 @@ def get_selected_user_info(user_info):
     }    
     return selected_data
 
-# Função para extrair o tempo de criação do vídeo
+# Function to extract the creation time of the video
 def get_create_time(video):
     return video["createTime"]
 
-# Função para extrair informações de um comentário
+# Function to extract information from a comment
 def get_comment_info(comment):
     return {
         "text": comment.text,
         "likes_count": comment.likes_count
     }
 
-# Função para coletar dados de vídeos de um usuário
+# Function to collect videos from a user
 async def collect_user_videos(users, path=None):
     async with TikTokApi() as api:
-        # Criar sessão para autenticação com o TikTok
+        # Create session for TikTok authentication
         await api.create_sessions(ms_tokens=[TOKEN], num_sessions=1, sleep_after=3, headless=False)
 
         # Create a main directory to store all users' data
@@ -87,42 +87,42 @@ async def collect_user_videos(users, path=None):
 
         with open(users, 'r') as file:
             for line in file:
-                user_id = line.strip()  # Extrair o ID do usuário
-                user_directory = os.path.join(main_directory, user_id) if path else f"./{user_id}"  # Definir diretório de saída
-                create_directory(user_directory)  # Criar diretório, se não existir
+                user_id = line.strip()  # Extract user ID
+                user_directory = os.path.join(main_directory, user_id) if path else f"./{user_id}"  # Define output directory
+                create_directory(user_directory)  # Create directory if it doesn't exist
 
-                user = api.user(user_id)  # Buscar dados do usuário
+                user = api.user(user_id)  # Fetch user data
                 user_info = await user.info()
                 write_to_file(os.path.join(user_directory, "userInfo.txt"), get_selected_user_info(user_info))
 
-                async for video in user.videos(count=30):  # Buscar vídeos do usuário
-                    video_data = get_selected_attributes(video.as_dict)  # Obter dados selecionados do vídeo
-                    file_name = f"{get_create_time(video.as_dict)}.txt"  # Nome do arquivo baseado no tempo de criação
-                    write_to_file(os.path.join(user_directory, file_name), video_data)  # Escrever dados no arquivo
+                async for video in user.videos(count=30):  # Fetch user videos
+                    video_data = get_selected_attributes(video.as_dict)  # Get selected video data
+                    file_name = f"{get_create_time(video.as_dict)}.txt"  # File name based on creation time
+                    write_to_file(os.path.join(user_directory, file_name), video_data)  # Write data to file
 
-# Função para coletar dados de um vídeo por URL
+# Function to collect video data by URL
 async def collect_videos_by_urls(urls, path=None):
     async with TikTokApi() as api:
-        # Criar sessão para autenticação com o TikTok
+        # Create session for TikTok authentication
         await api.create_sessions(ms_tokens=[TOKEN], num_sessions=1, sleep_after=1, headless=False)
 
-        video_directory = os.path.join(path, "videos") if path else "./video"  # Definir diretório de saída
-        create_directory(video_directory)  # Criar diretório, se não existir
+        video_directory = os.path.join(path, "videos") if path else "./video"  # Define output directory
+        create_directory(video_directory)  # Create directory if it doesn't exist
 
         with open(urls, 'r') as file:
             for line in file:
-                url = line.strip()  # Extrair o ID do usuário
-                video = api.video(url=url)  # Obter o vídeo pelo URL
-                video_info = await video.info()  # Obter informações detalhadas do vídeo
+                url = line.strip()  # Extract user ID
+                video = api.video(url=url)  # Fetch video by URL
+                video_info = await video.info()  # Get detailed video information
 
-                video_data = get_selected_attributes(video_info)  # Obter dados selecionados do vídeo
-                file_name = f"{get_create_time(video_info)}.json"  # Nome do arquivo baseado no tempo de criação
-                write_to_json_file(os.path.join(video_directory, file_name), video_data)  # Escrever dados no arquivo
+                video_data = get_selected_attributes(video_info)  # Get selected video data
+                file_name = f"{get_create_time(video_info)}.json"  # File name based on creation time
+                write_to_json_file(os.path.join(video_directory, file_name), video_data)  # Write data to file
 
-# Função para coletar vídeos por hashtag
+# Function to collect videos by hashtag
 async def collect_hashtag_videos(hashtag, path=None):
     async with TikTokApi() as api:
-        # Criar sessão para autenticação com o TikTok
+        # Create session for TikTok authentication
         await api.create_sessions(ms_tokens=[TOKEN], num_sessions=1, sleep_after=3, headless=False)
 
         # Create a main directory to store all users' data
@@ -130,44 +130,44 @@ async def collect_hashtag_videos(hashtag, path=None):
         main_directory = os.path.join(path, rf"Hashtag - {current_timestamp}")
         create_directory(main_directory)  # Ensure the main directory exists
 
-        path = os.path.join(main_directory, hashtag) if path else f"./{hashtag}"  # Definir diretório de saída
-        create_directory(path)  # Criar diretório, se não existir
+        path = os.path.join(main_directory, hashtag) if path else f"./{hashtag}"  # Define output directory
+        create_directory(path)  # Create directory if it doesn't exist
 
-        tag = api.hashtag(name=hashtag)  # Buscar vídeos pela hashtag
-        async for video in tag.videos(count=30):  # Iterar sobre os vídeos encontrados
-            video_data = get_selected_attributes(video.as_dict)  # Obter dados selecionados do vídeo
-            file_name = f"{get_create_time(video.as_dict)}.txt"  # Nome do arquivo baseado no tempo de criação
-            write_to_file(os.path.join(path, file_name), video_data)  # Escrever dados no arquivo
+        tag = api.hashtag(name=hashtag)  # Fetch videos by hashtag
+        async for video in tag.videos(count=30):  # Iterate over the found videos
+            video_data = get_selected_attributes(video.as_dict)  # Get selected video data
+            file_name = f"{get_create_time(video.as_dict)}.txt"  # File name based on creation time
+            write_to_file(os.path.join(path, file_name), video_data)  # Write data to file
 
-# Função para coletar comentários de um vídeo
+# Function to collect comments from a video
 async def collect_video_comments(url, path=None):
     async with TikTokApi() as api:
-        # Criar sessão para autenticação com o TikTok
+        # Create session for TikTok authentication
         await api.create_sessions(ms_tokens=[TOKEN], num_sessions=1, sleep_after=3, headless=False)
 
-        video = api.video(url=url)  # Obter o vídeo pelo URL
+        video = api.video(url=url)  # Fetch video by URL
 
-        video_directory = os.path.join(path, "video_comments") if path else "./video_comments"  # Definir diretório de saída
-        create_directory(video_directory)  # Criar diretório, se não existir
+        video_directory = os.path.join(path, "video_comments") if path else "./video_comments"  # Define output directory
+        create_directory(video_directory)  # Create directory if it doesn't exist
 
-        async for comment in video.comments(count=30):  # Iterar sobre os comentários do vídeo
-            comment_data = get_comment_info(comment)  # Obter informações do comentário
-            file_name = f"{get_create_time(comment.as_dict)}.txt"  # Nome do arquivo baseado no tempo de criação
-            write_to_file(os.path.join(video_directory, file_name), comment_data)  # Escrever dados no arquivo
+        async for comment in video.comments(count=30):  # Iterate over video comments
+            comment_data = get_comment_info(comment)  # Get comment information
+            file_name = f"{get_create_time(comment.as_dict)}.txt"  # File name based on creation time
+            write_to_file(os.path.join(video_directory, file_name), comment_data)  # Write data to file
 
-# Função principal que executa o processo baseado no modo especificado
+# Main function that runs the process based on the specified mode
 async def main():
     if MODE == "User":
-        await collect_user_videos(USERS, path=OUTPUT_PATH)  # Coletar vídeos de usuários
+        await collect_user_videos(USERS, path=OUTPUT_PATH)  # Collect user videos
     elif MODE == "Video":
-        await collect_videos_by_urls(URLS, path=OUTPUT_PATH)  # Coletar dados de um vídeo específico
+        await collect_videos_by_urls(URLS, path=OUTPUT_PATH)  # Collect data from a specific video
     elif MODE == "Comments":
-        await collect_video_comments(URLS, path=OUTPUT_PATH)  # Coletar comentários de um vídeo
+        await collect_video_comments(URLS, path=OUTPUT_PATH)  # Collect comments from a video
     elif MODE == "Hashtag":
-        await collect_hashtag_videos(HASHTAG, path=OUTPUT_PATH)  # Coletar vídeos por hashtag
+        await collect_hashtag_videos(HASHTAG, path=OUTPUT_PATH)  # Collect videos by hashtag
     else:
-        raise ValueError("Modo inválido nas variáveis de ambiente.")
+        raise ValueError("Invalid mode in environment variables.")
 
-# Executar a função principal
+# Run the main function
 if __name__ == "__main__":
     asyncio.run(main())
