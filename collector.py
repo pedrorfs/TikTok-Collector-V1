@@ -4,6 +4,7 @@ import json
 from dotenv import dotenv_values
 from TikTokApi import TikTokApi
 import time
+import csv
 
 # Load environment variables
 env = dotenv_values(".env")
@@ -17,6 +18,25 @@ HASHTAG = env.get("HASHTAG")
 # Validate environment variables
 if not all([MODE, USERS, URLS, OUTPUT_PATH, TOKEN, HASHTAG]):
     raise ValueError("One or more environment variables are missing.")
+
+def convert_comments_into_csv(comments, filename):
+    # Open the CSV file in write mode
+    with open(f"{filename}.csv", 'w', newline='', encoding='utf-8') as csv_file:
+        csv_writer = csv.writer(csv_file)
+
+        # Define the header for the CSV file
+        header = ["create_time", "author", "text", "likes", "replys", "url", "comment_language"]
+        
+        # Write the header row
+        csv_writer.writerow(header)
+
+        # Loop through each comment and write the data
+        for comment in comments:
+            # Prepare the row using the attributes
+            row = comment.values()
+            
+            # Write the row to the CSV file
+            csv_writer.writerow(row)
 
 # Returns the current timestamp in the format "YYYY-MM-DD HH:MM:SS"
 def get_current_timestamp():
@@ -70,8 +90,13 @@ def get_create_time(video):
 # Function to extract information from a comment
 def get_comment_info(comment):
     return {
-        "text": comment.text,
-        "likes_count": comment.likes_count
+        "create_time": comment.as_dict["create_time"],
+        "author": comment.as_dict["user"]["unique_id"],
+        "text": comment.as_dict["text"],
+        "likes": comment.as_dict["digg_count"],
+        "reply_comment_total": comment.as_dict["reply_comment_total"],
+        "url": comment.as_dict["share_info"]["url"],
+        "comment_language": comment.as_dict["comment_language"]
     }
 
 # Function to collect videos from a user
@@ -140,20 +165,23 @@ async def collect_hashtag_videos(hashtag, path=None):
             write_to_file(os.path.join(path, file_name), video_data)  # Write data to file
 
 # Function to collect comments from a video
-async def collect_video_comments(url, path=None):
+async def collect_video_comments(urls, path=None):
     async with TikTokApi() as api:
         # Create session for TikTok authentication
         await api.create_sessions(ms_tokens=[TOKEN], num_sessions=1, sleep_after=3, headless=False)
 
-        video = api.video(url=url)  # Fetch video by URL
+        with open(urls, 'r') as file:
+            for line in file:
+                url = line.strip()  # Extract user ID
+                video = api.video(url=url)  # Fetch video by URL
 
-        video_directory = os.path.join(path, "video_comments") if path else "./video_comments"  # Define output directory
-        create_directory(video_directory)  # Create directory if it doesn't exist
-
-        async for comment in video.comments(count=30):  # Iterate over video comments
-            comment_data = get_comment_info(comment)  # Get comment information
-            file_name = f"{get_create_time(comment.as_dict)}.txt"  # File name based on creation time
-            write_to_file(os.path.join(video_directory, file_name), comment_data)  # Write data to file
+                video_directory = os.path.join(path, "video_comments") if path else "./video_comments"  # Define output directory
+                create_directory(video_directory)  # Create directory if it doesn't exist
+                comments = []
+                async for comment in video.comments(count=175):  # Iterate over video comments
+                    comment_data = get_comment_info(comment)
+                    comments.append(comment_data)
+                    convert_comments_into_csv(comments, "teste")
 
 # Main function that runs the process based on the specified mode
 async def main():
